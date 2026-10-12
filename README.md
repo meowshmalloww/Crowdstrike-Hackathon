@@ -59,19 +59,19 @@ Use the origin’s real HTTPS URL when it has a valid certificate. Point the web
 
 The included `verify-local.py` only tests the disposable loopback storefront. Do not run it after pointing `ORIGIN_URL` at a remote site; it will refuse that configuration. Test a real site only with an explicitly authorized, separately scoped plan.
 
-## Jev and the local model
+## Jev and model integrations
 
 For real Jev triage, set `TYPESAFE_API_KEY` in `.env` and restart. The key stays in the API process. Without it, incidents still use deterministic detection and show Jev as `not_configured`; no fabricated Jev answer is produced.
 
-The local model adapter uses an OpenAI-compatible Chat Completions endpoint. Configure these values in `.env`:
+The optional model adapter uses an OpenAI-compatible Chat Completions endpoint. Configure these values only for a provider that permits application traffic:
 
 ```text
-LOCAL_MODEL_API_BASE=http://127.0.0.1:11434/v1
+LOCAL_MODEL_API_BASE=https://<approved-provider>/v1
 LOCAL_MODEL_NAME=<exact model ID exposed by your server>
-LOCAL_MODEL_API_KEY=
+LOCAL_MODEL_API_KEY=<provider key, if required>
 ```
 
-For Ollama, the local OpenAI-compatible base is `http://127.0.0.1:11434/v1`. The current development PC has Ollama but does not have the requested Qwen model installed. The supplied moLab notebook runs Qwen inside its sandbox; moLab's usage restrictions prohibit exposing its compute to outside traffic or proxying/re-exposing its AI endpoints, so CounterFlow must not call it through a sandbox port proxy. Run Qwen on the same host as CounterFlow or use an inference endpoint whose terms allow application traffic. An endpoint that is not OpenAI-compatible needs a service-specific adapter before it can be called. `LOCAL_MODEL_TIMEOUT_SECONDS` defaults to 120 and is bounded to 5–300 seconds at runtime. Model output is advisory; only Coraza and explicit signed gateway policies enforce traffic decisions.
+The supplied moLab notebook runs Qwen inside its sandbox. [moLab's current usage restrictions](https://molab.marimo.io/pages/molab/restrictions) prohibit exposing sandbox compute to outside traffic and proxying or re-exposing its AI endpoints, so CounterFlow does not connect to that notebook server. Keep Qwen in the notebook's interactive workflow, or choose an inference provider that permits application requests. CounterFlow does not download or start a model. `LOCAL_MODEL_TIMEOUT_SECONDS` defaults to 120 and is bounded to 5–300 seconds at runtime. Jev and permitted inference models are advisory; only Coraza and explicit signed gateway policies enforce traffic decisions.
 
 ## Current scope and limits
 

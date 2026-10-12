@@ -16,8 +16,11 @@ const config = new Map(
 
 const origin = new URL(config.get("ORIGIN_URL") ?? "");
 const listen = config.get("LISTEN_ADDR") ?? "127.0.0.1:8080";
-if (origin.hostname !== "127.0.0.1" || origin.port !== "3001" || listen !== "127.0.0.1:8080") {
-  throw new Error("Local verification refused: expected ORIGIN_URL=http://127.0.0.1:3001 and LISTEN_ADDR=127.0.0.1:8080.");
+const listenMatch = /^(?:\[([^\]]+)\]|([^:]+)):(\d+)$/.exec(listen);
+const listenHost = listenMatch?.[1] ?? listenMatch?.[2];
+const listenPort = listenMatch?.[3];
+if (origin.hostname !== "127.0.0.1" || origin.port !== "3001" || listenPort !== "8080" || !["127.0.0.1", "0.0.0.0"].includes(listenHost)) {
+  throw new Error("Local verification refused: expected the disposable Cat Break origin at 127.0.0.1:3001 and the CounterFlow gateway on port 8080 (loopback or all interfaces).");
 }
 
 function request(base, requestPath, method = "GET") {

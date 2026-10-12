@@ -60,6 +60,16 @@ def test_management_api_requires_bearer_auth(operator_client):
     assert client.get("/api/v1/incidents", headers=auth_headers()).status_code == 200
 
 
+def test_integrations_explain_molab_model_is_not_connected(operator_client):
+    client, _ = operator_client
+    response = client.get("/api/v1/integrations", headers=auth_headers())
+    assert response.status_code == 200
+    molab = response.json()["molab_qwen"]
+    assert molab["status"] == "not_connected"
+    assert molab["provider"] == "moLab"
+    assert "prohibits exposing sandbox compute" in molab["note"]
+
+
 def test_mutation_records_status_and_rejects_replayed_request_id(operator_client):
     client, incident_id = operator_client
     request_id = str(uuid.uuid4())
