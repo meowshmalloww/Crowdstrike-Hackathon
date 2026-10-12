@@ -1,4 +1,7 @@
-param([string]$LocalModelNameOverride)
+param(
+  [string]$LocalModelNameOverride,
+  [string]$OriginSitePath
+)
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -77,6 +80,19 @@ function Wait-HttpReady([string]$uri, [string]$name, [int]$timeoutSeconds = 30) 
   throw "$name did not become ready. See $logDir\$name.err.log."
 }
 
+function Wait-StaticOrigin([string]$uri, [string]$name, [int]$timeoutSeconds = 30) {
+  $deadline = [DateTime]::UtcNow.AddSeconds($timeoutSeconds)
+  while ([DateTime]::UtcNow -lt $deadline) {
+    try {
+      $response = Invoke-WebRequest -Uri $uri -UseBasicParsing -TimeoutSec 2
+      if ($response.StatusCode -eq 200) { return }
+    } catch {
+      Start-Sleep -Milliseconds 350
+    }
+  }
+  throw "$name did not become ready. See $logDir\origin-site.err.log."
+}
+
 try {
   if (-not $env:CONTROL_API_BIND_ADDRESS) { $env:CONTROL_API_BIND_ADDRESS = '127.0.0.1' }
   $controlUri = [Uri]$env:CONTROL_API_URL
@@ -97,11 +113,34 @@ try {
 
   Remove-Item Env:CONTROL_API_TOKEN, Env:GATEWAY_API_TOKEN, Env:POLICY_SIGNING_KEY, Env:SOURCE_HASH_SALT, Env:TYPESAFE_API_KEY, Env:LOCAL_MODEL_API_KEY -ErrorAction SilentlyContinue
   $originUri = [Uri]$env:ORIGIN_URL
-  if ($originUri.IsLoopback -and $originUri.Port -eq 8000) {
+  if ($OriginSitePath) {
+    if ($originUri.Scheme -ne 'http' -or $originUri.Host -ne '127.0.0.1' -or $originUri.IsDefaultPort) {
+      throw 'A supplied static origin must use an explicit port on 127.0.0.1 in ORIGIN_URL.'
+    }
+    $originSiteRoot = (Resolve-Path -LiteralPath $OriginSitePath).Path
+    $originEntry = Join-Path $originSiteRoot 'server.js'
+    if (-not (Test-Path -LiteralPath $originEntry -PathType Leaf)) { throw 'The supplied origin folder must contain server.js.' }
+    $node = Get-Command node.exe -ErrorAction Stop
+    $nodeVersionText = & $node.Source --version
+    if ($LASTEXITCODE -ne 0 -or $nodeVersionText -notmatch '^v(\d+)\.' -or [int]$Matches[1] -lt 18) {
+      throw 'Node.js 18 or newer is required for a supplied static origin.'
+    }
+    $occupiedOrigin = Get-NetTCPConnection -State Listen -LocalPort $originUri.Port -ErrorAction SilentlyContinue
+    if ($occupiedOrigin) { throw "Origin port $($originUri.Port) is already in use. Stop that listener or choose another port in ORIGIN_URL." }
+    $savedPort = [Environment]::GetEnvironmentVariable('PORT', 'Process')
+    $env:PORT = [string]$originUri.Port
+    try {
+      Add-ServiceProcess 'origin-site' $node.Source @('server.js') $originSiteRoot 'server.js' | Out-Null
+    } finally {
+      if ($null -eq $savedPort) { Remove-Item Env:PORT -ErrorAction SilentlyContinue }
+      else { $env:PORT = $savedPort }
+    }
+  } elseif ($originUri.IsLoopback -and $originUri.Port -eq 8000) {
     Add-ServiceProcess 'origin' $python @('-m', 'uvicorn', 'app.main:app', '--app-dir', 'services/lab-origin', '--host', '127.0.0.1', '--port', '8000') $root 'services/lab-origin' | Out-Null
   }
   Add-ServiceProcess 'honeypot' $python @('-m', 'uvicorn', 'app.main:app', '--app-dir', 'services/honeypot', '--host', '127.0.0.1', '--port', '8001') $root 'services/honeypot' | Out-Null
-  if ($originUri.IsLoopback -and $originUri.Port -eq 8000) { Wait-HttpReady 'http://127.0.0.1:8000/health/ready' 'origin' }
+  if ($OriginSitePath) { Wait-StaticOrigin ($env:ORIGIN_URL.TrimEnd('/') + '/') 'origin-site' }
+  elseif ($originUri.IsLoopback -and $originUri.Port -eq 8000) { Wait-HttpReady 'http://127.0.0.1:8000/health/ready' 'origin' }
   Wait-HttpReady 'http://127.0.0.1:8001/health/live' 'honeypot'
 
   $env:GATEWAY_API_TOKEN = $savedGatewayToken

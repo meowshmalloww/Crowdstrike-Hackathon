@@ -32,6 +32,18 @@ Open the dashboard at [http://127.0.0.1:3000](http://127.0.0.1:3000). The protec
 
 It verifies a benign request, three real WAF denials, the exact-session deception rule, a real honeypot response, persisted events and incident evidence, and the dashboard HTTP response. It refuses to send attack requests unless `ORIGIN_URL` points at the local disposable storefront on port 8000.
 
+### Protect a local Node.js website
+
+For a local static site with a `server.js` entry point, set `ORIGIN_URL=http://127.0.0.1:3001` in `.env`, then run:
+
+```powershell
+.\scripts\start-local.ps1 -OriginSitePath 'C:\path\to\your\site'
+```
+
+CounterFlow starts that Node origin on loopback port 3001 and routes the protected site through `http://127.0.0.1:8080`. Open the dashboard at `http://127.0.0.1:3000`. The origin process is tracked and stopped by `scripts\stop-local.ps1`. This local-site option does not configure public hosting or TLS.
+
+Run `node scripts\verify-protected-site.mjs` to check the gallery, origin isolation, response headers, and local gateway blocking. The check refuses non-loopback origin or gateway settings and sends only read-only requests.
+
 ## Protect your own website
 
 Edit the private `.env` file before starting CounterFlow:
