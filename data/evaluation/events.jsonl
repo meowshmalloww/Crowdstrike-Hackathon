@@ -1,0 +1,20 @@
+{"id":"b1","label":false,"query":"mug","correlation_id":"benign-search","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b2","label":false,"query":"notebook","correlation_id":"benign-search","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b3","label":false,"query":"O'Reilly guide","correlation_id":"quoted-name","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b4","label":false,"query":"café ☕","correlation_id":"unicode-search","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b5","label":false,"query":"blue-team: 100% useful!","correlation_id":"punctuation-search","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b6","label":false,"query":"children's books","correlation_id":"quoted-name","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b7","label":false,"query":"tea + coffee?","correlation_id":"punctuation-search","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b8","label":false,"query":"東京 map","correlation_id":"unicode-search","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b9","label":false,"query":"O'Connor's mug","correlation_id":"quoted-name","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"b10","label":false,"query":"[limited] edition","correlation_id":"punctuation-search","event":{"route":"/api/search","method":"GET","status":200,"signals":{}}}
+{"id":"a1","label":true,"query":"%' OR 1=1 --","correlation_id":"sql-session-a","event":{"route":"/api/search","method":"GET","status":403,"signals":{"sqli_pattern":true,"waf_interrupted":true}}}
+{"id":"a2","label":true,"query":"' UNION SELECT id,name FROM products -- ","correlation_id":"sql-session-b","event":{"route":"/api/search","method":"GET","status":403,"signals":{"sqli_pattern":true,"waf_interrupted":true}}}
+{"id":"a3","label":true,"query":"1 OR 2=2","correlation_id":"sql-session-a","related_count":3,"event":{"route":"/api/search","method":"GET","status":403,"signals":{"sqli_pattern":true}}}
+{"id":"a4","label":true,"query":"'; SELECT name FROM products -- ","correlation_id":"sql-session-c","event":{"route":"/api/search","method":"GET","status":403,"signals":{"sqli_pattern":true}}}
+{"id":"a5","label":true,"query":"' OR 1=1 --","correlation_id":"sql-session-d","event":{"route":"/api/search","method":"GET","status":200,"signals":{"sqli_pattern":true,"canary_exposed":true}}}
+{"id":"a6","label":true,"query":"UNION ALL SELECT password FROM users","correlation_id":"sql-session-e","event":{"route":"/api/search","method":"GET","status":403,"signals":{"sqli_pattern":true}}}
+{"id":"a7","label":true,"query":"1=1 OR 3=3","correlation_id":"sql-session-f","related_count":4,"event":{"route":"/api/search","method":"GET","status":403,"signals":{"sqli_pattern":true}}}
+{"id":"a8","label":true,"query":"SLEEP(2)","correlation_id":"sql-session-g","event":{"route":"/api/search","method":"GET","status":403,"signals":{"sqli_pattern":true}}}
+{"id":"a9","label":true,"query":"/../../.env","correlation_id":"scanner-session-a","event":{"route":"/api/search","method":"GET","status":404,"signals":{"scanner_probe":true}}}
+{"id":"a10","label":true,"query":"/wp-admin/setup.php","correlation_id":"scanner-session-b","event":{"route":"/api/search","method":"GET","status":404,"signals":{"scanner_probe":true}}}
